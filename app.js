@@ -28,6 +28,17 @@ Chirp.belongsTo(User, {
 })
 User.hasMany(Chirp)
 
+User.belongsToMany(User, {
+    as: 'followed',
+    through: 'followers',
+    timestamps: false
+})
+
+User.belongsToMany(Chirp, {
+    through: 'likes',
+    timestamps: false
+})
+
 sequelize
     .sync()
     .then(result => {
