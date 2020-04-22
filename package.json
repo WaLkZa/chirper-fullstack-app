@@ -12,6 +12,8 @@
     "body-parser": "^1.19.0",
     "debug": "~2.6.9",
     "express": "~4.16.1",
+    "express-validator": "^6.4.0",
+    "jsonwebtoken": "^8.5.1",
     "mysql2": "^2.1.0",
     "sequelize": "^5.21.6"
   },

@@ -10,6 +10,7 @@ const Chirp = require('./backend/models/chirp')
 const port = 3000;
 
 const userRoutes = require('./backend/routes/user');
+const chirpRoutes = require('./backend/routes/chirp');
 
 const app = express();
 
@@ -21,6 +22,18 @@ app.use(bodyParser.urlencoded({
 app.use("/images", express.static(path.join("backend/images")));
 
 app.use("/api/user", userRoutes);
+app.use("/api/chirp", chirpRoutes);
+
+app.use((error, req, res, next) => {
+    console.log(error);
+    const status = error.statusCode || 500;
+    const message = error.message;
+    const data = error.data;
+    res.status(status).json({
+        message: message,
+        data: data
+    });
+});
 
 Chirp.belongsTo(User, {
     constraints: true,
