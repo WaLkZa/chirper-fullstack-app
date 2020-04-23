@@ -1,10 +1,8 @@
 const Chirp = require('../models/chirp')
 
 exports.createChirp = (req, res, next) => {
-
     const content = req.body.content;
-    const userId = req.body.userId;
-    let creator;
+    const userId = req.userId
 
     Chirp.create({
             userId: userId,
@@ -37,11 +35,11 @@ exports.editChirp = (req, res, next) => {
                 throw error;
             }
 
-            // if (chirp.userId.toString() !== req.userId) {
-            //     const error = new Error('Not authorized!');
-            //     error.statusCode = 403;
-            //     throw error;
-            // }
+            if (chirp.userId !== req.userId) {
+                const error = new Error('Not authorized!');
+                error.statusCode = 403;
+                throw error;
+            }
 
             return chirp.update({
                 content: content,
@@ -72,11 +70,11 @@ exports.deleteChirp = (req, res, next) => {
                 throw error;
             }
 
-            // if (chirp.userId.toString() !== req.userId) {
-            //     const error = new Error('Not authorized!');
-            //     error.statusCode = 403;
-            //     throw error;
-            // }
+            if (chirp.userId !== req.userId) {
+                const error = new Error('Not authorized!');
+                error.statusCode = 403;
+                throw error;
+            }
 
             return chirp.destroy()
         })
