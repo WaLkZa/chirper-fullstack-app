@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user')
 
 exports.registerUser = (req, res, next) => {
-    const name = req.body.name;
+    const name = req.body.username;
     const password = req.body.password;
 
     bcrypt
@@ -18,22 +18,26 @@ exports.registerUser = (req, res, next) => {
             return user;
         })
         .then(result => {
+            const jsonWebToken = createJsonWebToken(result.id, result.name);
+
             res.status(201).json({
                 message: 'User created!',
-                userId: result.id
+                token: jsonWebToken,
+                userId: result.id,
+                username: result.name
             });
         })
         .catch(err => {
             if (!err.statusCode) {
                 err.statusCode = 500;
             }
-            
+
             next(err);
         });
 }
 
 exports.loginUser = (req, res, next) => {
-    const name = req.body.name;
+    const name = req.body.username;
     const password = req.body.password;
     let loadedUser;
 
@@ -59,18 +63,12 @@ exports.loginUser = (req, res, next) => {
                 throw error;
             }
 
-            const jsonWebToken = jwt.sign({
-                    name: loadedUser.name,
-                    userId: loadedUser.id
-                },
-                'somesupersecretsecret', {
-                    expiresIn: '1h'
-                }
-            )
+            const jsonWebToken = createJsonWebToken(loadedUser.id, loadedUser.name)
 
             res.status(200).json({
                 token: jsonWebToken,
-                userId: loadedUser.id
+                userId: loadedUser.id,
+                username: loadedUser.name
             })
         })
         .catch(err => {
@@ -80,4 +78,15 @@ exports.loginUser = (req, res, next) => {
 
             next(err);
         });
+}
+
+function createJsonWebToken(id, username) {
+    return jwt.sign({
+            userId: id,
+            name: username
+        },
+        'somesupersecretsecret', {
+            expiresIn: '1h'
+        }
+    );
 }
