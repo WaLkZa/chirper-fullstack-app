@@ -3,6 +3,28 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/user')
 
+exports.allUsers = (req, res, next) => {
+    User.findAll()
+        .then(users => {
+            if (!users) {
+                const error = new Error("No users in database!")
+                error.statusCode = 401;
+                throw error;
+            }
+
+            res.status(200).json({
+                users: users
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
 exports.registerUser = (req, res, next) => {
     const name = req.body.username;
     const password = req.body.password;

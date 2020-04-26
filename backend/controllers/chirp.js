@@ -1,4 +1,141 @@
+const User = require('../models/user');
 const Chirp = require('../models/chirp')
+
+exports.allChirps = (req, res, next) => {
+    Chirp.findAll({
+            include: [{
+                model: User
+            }],
+            order: [
+                ['dateCreated', 'DESC']
+            ]
+        })
+        .then(chirps => {
+            if (!chirps) {
+                const error = new Error("No chirps in database!")
+                error.statusCode = 401;
+                throw error;
+            }
+
+            res.status(200).json({
+                chirps: chirps
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
+exports.allChirpsByAuthorID = (req, res, next) => {
+    const authorId = +req.params.authorId;
+
+    User.findByPk(authorId)
+        .then((user) => {
+            if (!user) {
+                const error = new Error(`Does not exist user with id ${authorId}`)
+                error.statusCode = 401;
+                throw error;
+            }
+
+            Chirp.findAll({
+                    where: {
+                        userId: user.id
+                    },
+                    include: [{
+                        model: User
+                    }],
+                    order: [
+                        ['dateCreated', 'DESC']
+                    ]
+                })
+                .then(chirps => {
+                    if (!chirps || chirps.length === 0) {
+                        const error = new Error(`User ${user.name} does not have any chirps!`)
+                        error.statusCode = 401;
+                        throw error;
+                    }
+
+                    res.status(200).json({
+                        chirps: chirps
+                    })
+                })
+                .catch(err => {
+                    if (!err.statusCode) {
+                        err.statusCode = 500;
+                    }
+
+                    next(err);
+                });
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
+exports.chirpById = (req, res, next) => {
+    const chirpId = +req.params.id;
+
+    Chirp.findByPk(chirpId, {
+            include: [{
+                model: User
+            }]
+        })
+        .then(chirp => {
+            if (!chirp) {
+                const error = new Error('Could not find chirp.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            res.status(200).json({
+                chirp: chirp
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
+
+exports.chirpByAuthorName = (req, res, next) => {
+    const authorName = req.params.authorName;
+
+    Chirp.findOne({
+            include: [{
+                model: User,
+                where: {
+                    name: authorName
+                }
+            }]
+        })
+        .then(chirp => {
+            if (!chirp) {
+                const error = new Error('Could not find chirp.');
+                error.statusCode = 404;
+                throw error;
+            }
+
+            res.status(200).json({
+                chirp: chirp
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+            next(err);
+        });
+}
 
 exports.createChirp = (req, res, next) => {
     const content = req.body.content;
@@ -24,7 +161,7 @@ exports.createChirp = (req, res, next) => {
 }
 
 exports.editChirp = (req, res, next) => {
-    const chirpId = req.params.id;
+    const chirpId = +req.params.id;
     const content = req.body.content;
 
     Chirp.findByPk(chirpId)
@@ -60,7 +197,7 @@ exports.editChirp = (req, res, next) => {
 }
 
 exports.deleteChirp = (req, res, next) => {
-    const chirpId = req.params.id;
+    const chirpId = +req.params.id;
 
     Chirp.findByPk(chirpId)
         .then(chirp => {
