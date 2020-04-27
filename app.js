@@ -52,6 +52,7 @@ Chirp.belongsTo(User, {
 User.hasMany(Chirp)
 
 User.belongsToMany(User, {
+    foreignKey: 'followerId',
     as: 'followed',
     through: 'followers',
     timestamps: false
@@ -61,6 +62,14 @@ User.belongsToMany(Chirp, {
     through: 'likes',
     timestamps: false
 })
+
+//only for debug
+// const model = User
+// for (let assoc of Object.keys(model.associations)) {
+//     for (let accessor of Object.keys(model.associations[assoc].accessors)) {
+//         console.log(model.name + '.' + model.associations[assoc].accessors[accessor] + '()');
+//     }
+// }
 
 sequelize
     .sync()

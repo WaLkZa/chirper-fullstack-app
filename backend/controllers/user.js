@@ -102,6 +102,51 @@ exports.loginUser = (req, res, next) => {
         });
 }
 
+exports.followUser = (req, res, next) => {
+    const currentUserID = req.userId;
+    const toFollowUserID = req.params.id;
+
+    User.findByPk(currentUserID)
+        .then(currentUser => {
+            User.findByPk(toFollowUserID)
+                .then(toFollowUser => {
+                    if (!toFollowUser) {
+                        const error = new Error("Can not follow or unfollow non-existent user!")
+                        error.statusCode = 401;
+                        throw error;
+                    }
+
+                    currentUser.hasFollowed(toFollowUser)
+                        .then(hasFollowedResult => {
+                            if (hasFollowedResult) {
+                                currentUser.removeFollowed(toFollowUser)
+                                    .then(result => {
+                                        res.status(200).json({
+                                            message: `You are unfollow ${toFollowUser.name}`
+                                        });
+                                    })
+
+                            } else {
+                                currentUser.addFollowed(toFollowUser)
+                                    .then(result => {
+                                        res.status(200).json({
+                                            message: `You are following ${toFollowUser.name}`
+                                        });
+                                    })
+
+                            }
+                        })
+                })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
 function createJsonWebToken(id, username) {
     return jwt.sign({
             userId: id,
