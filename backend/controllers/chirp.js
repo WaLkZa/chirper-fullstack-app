@@ -1,5 +1,6 @@
 const User = require('../models/user');
 const Chirp = require('../models/chirp')
+const HttpError = require('../models/http-error');
 
 exports.allChirps = (req, res, next) => {
     Chirp.findAll({
@@ -12,9 +13,7 @@ exports.allChirps = (req, res, next) => {
         })
         .then(chirps => {
             if (!chirps) {
-                const error = new Error("No chirps in database!")
-                error.statusCode = 401;
-                throw error;
+                throw new HttpError('No chirps in database!', 401);
             }
 
             res.status(200).json({
@@ -36,9 +35,7 @@ exports.allChirpsByAuthorID = (req, res, next) => {
     User.findByPk(authorId)
         .then((user) => {
             if (!user) {
-                const error = new Error(`Does not exist user with id ${authorId}`)
-                error.statusCode = 401;
-                throw error;
+                throw new HttpError(`Does not exist user with id ${authorId}`, 401);
             }
 
             Chirp.findAll({
@@ -54,9 +51,7 @@ exports.allChirpsByAuthorID = (req, res, next) => {
                 })
                 .then(chirps => {
                     if (!chirps || chirps.length === 0) {
-                        const error = new Error(`User ${user.name} does not have any chirps!`)
-                        error.statusCode = 401;
-                        throw error;
+                        throw new HttpError(`User ${user.name} does not have any chirps!`, 401);
                     }
 
                     res.status(200).json({
@@ -90,9 +85,7 @@ exports.chirpById = (req, res, next) => {
         })
         .then(chirp => {
             if (!chirp) {
-                const error = new Error('Could not find chirp.');
-                error.statusCode = 404;
-                throw error;
+                throw new HttpError('Could not find chirp.', 404);
             }
 
             res.status(200).json({
@@ -120,9 +113,7 @@ exports.chirpByAuthorName = (req, res, next) => {
         })
         .then(chirp => {
             if (!chirp) {
-                const error = new Error('Could not find chirp.');
-                error.statusCode = 404;
-                throw error;
+                throw new HttpError('Could not find chirp.', 404);
             }
 
             res.status(200).json({
@@ -167,15 +158,12 @@ exports.editChirp = (req, res, next) => {
     Chirp.findByPk(chirpId)
         .then(chirp => {
             if (!chirp) {
-                const error = new Error('Could not find chirp.');
-                error.statusCode = 404;
-                throw error;
+                throw new HttpError('Could not find chirp.', 404);
             }
 
+            //TODO investigate the order of checks
             if (chirp.userId !== req.userId) {
-                const error = new Error('Not authorized!');
-                error.statusCode = 403;
-                throw error;
+                throw new HttpError('Not authorized!', 403);
             }
 
             return chirp.update({
@@ -202,15 +190,12 @@ exports.deleteChirp = (req, res, next) => {
     Chirp.findByPk(chirpId)
         .then(chirp => {
             if (!chirp) {
-                const error = new Error('Could not find chirp.');
-                error.statusCode = 404;
-                throw error;
+                throw new HttpError('Could not find chirp.', 404);
             }
 
+            //TODO investigate the order of checks
             if (chirp.userId !== req.userId) {
-                const error = new Error('Not authorized!');
-                error.statusCode = 403;
-                throw error;
+                throw new HttpError('Not authorized!', 403);
             }
 
             return chirp.destroy()

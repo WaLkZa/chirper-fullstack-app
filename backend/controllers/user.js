@@ -2,14 +2,13 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user')
+const HttpError = require('../models/http-error');
 
 exports.allUsers = (req, res, next) => {
     User.findAll()
         .then(users => {
             if (!users) {
-                const error = new Error("No users in database!")
-                error.statusCode = 401;
-                throw error;
+                throw new HttpError('No users in database!', 401);
             }
 
             res.status(200).json({
@@ -70,9 +69,7 @@ exports.loginUser = (req, res, next) => {
         })
         .then(user => {
             if (!user) {
-                const error = new Error("A user with this name could not be found!")
-                error.statusCode = 401;
-                throw error;
+                throw new HttpError('A user with this name could not be found!', 401);
             }
 
             loadedUser = user;
@@ -80,9 +77,7 @@ exports.loginUser = (req, res, next) => {
         })
         .then(isEqual => {
             if (!isEqual) {
-                const error = new Error('Wrong password!');
-                error.statusCode = 401;
-                throw error;
+                throw new HttpError('Wrong password!', 401);
             }
 
             const jsonWebToken = createJsonWebToken(loadedUser.id, loadedUser.name)
@@ -111,9 +106,7 @@ exports.followUser = (req, res, next) => {
             User.findByPk(toFollowUserID)
                 .then(toFollowUser => {
                     if (!toFollowUser) {
-                        const error = new Error("Can not follow or unfollow non-existent user!")
-                        error.statusCode = 401;
-                        throw error;
+                        throw new HttpError('Can not follow or unfollow non-existent user!', 401);
                     }
 
                     currentUser.hasFollowed(toFollowUser)
