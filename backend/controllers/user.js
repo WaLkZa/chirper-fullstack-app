@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/user')
+const Chirp = require('../models/chirp')
 const HttpError = require('../models/http-error');
 
 exports.allUsers = (req, res, next) => {
@@ -20,6 +21,31 @@ exports.allUsers = (req, res, next) => {
                 err.statusCode = 500;
             }
 
+            next(err);
+        });
+}
+
+exports.userById = (req, res, next) => {
+    const userId = +req.params.id;
+
+    User.findByPk(userId, {
+            include: [{
+                model: Chirp
+            }]
+        })
+        .then(user => {
+            if (!user) {
+                throw new HttpError(`A user with id ${userId} could not be found!`, 404);
+            }
+
+            res.status(200).json({
+                user: user
+            })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
             next(err);
         });
 }

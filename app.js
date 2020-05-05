@@ -45,6 +45,11 @@ app.use((error, req, res, next) => {
     });
 });
 
+User.belongsToMany(Chirp, {
+    through: 'likes',
+    timestamps: false
+})
+
 Chirp.belongsTo(User, {
     constraints: true,
     onDelete: 'CASCADE'
@@ -58,10 +63,6 @@ User.belongsToMany(User, {
     timestamps: false
 })
 
-User.belongsToMany(Chirp, {
-    through: 'likes',
-    timestamps: false
-})
 
 //only for debug
 // const model = User
