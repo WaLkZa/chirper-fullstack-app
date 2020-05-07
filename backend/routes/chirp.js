@@ -6,6 +6,7 @@ const isAuth = require('../middleware/is-auth');
 const router = express.Router();
 
 router.get("/all", ChirpController.allChirps);
+router.get("/all-followed", isAuth, ChirpController.allChirpsByFollowedUsers);
 router.get("/all/:authorId", ChirpController.allChirpsByAuthorID);
 router.get("/:id", ChirpController.chirpById);
 router.get("/:authorName", ChirpController.chirpByAuthorName);

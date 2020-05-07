@@ -1,3 +1,8 @@
+const sequelize = require('../util/database');
+const {
+    QueryTypes
+} = require('sequelize')
+
 const User = require('../models/user');
 const Chirp = require('../models/chirp')
 const HttpError = require('../models/http-error');
@@ -19,6 +24,37 @@ exports.allChirps = (req, res, next) => {
             res.status(200).json({
                 chirps: chirps
             })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
+exports.allChirpsByFollowedUsers = (req, res, next) => {
+    const userId = req.userId
+
+    const query = `SELECT c.*, u2.name AS username FROM users AS u
+                INNER JOIN followers AS f ON f.followerId = u.id
+                INNER JOIN users AS u2 ON u2.id = f.followedId
+                INNER JOIN chirps AS c ON c.userId = u2.id
+                WHERE u.id = $id
+                ORDER BY c.dateCreated DESC`;
+
+    sequelize.query(query, {
+            nest: true,
+            bind: {
+                id: userId
+            },
+            type: QueryTypes.SELECT
+        })
+        .then((chirps) => {
+            res.status(200).json({
+                chirps: chirps
+            });
         })
         .catch(err => {
             if (!err.statusCode) {

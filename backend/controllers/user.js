@@ -1,5 +1,9 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const sequelize = require('../util/database');
+const {
+    QueryTypes
+} = require('sequelize')
 
 const User = require('../models/user')
 const Chirp = require('../models/chirp')
@@ -155,6 +159,73 @@ exports.followUser = (req, res, next) => {
 
                             }
                         })
+                })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
+exports.isUserFollowed = (req, res, next) => {
+    const currentUserID = req.userId;
+    const isFollowedUserID = req.params.id;
+
+    User.findByPk(currentUserID)
+        .then(currentUser => {
+            User.findByPk(isFollowedUserID)
+                .then(isFollowedUser => {
+                    if (!isFollowedUser) {
+                        throw new HttpError('Non-existent user!', 401);
+                    }
+
+                    currentUser.hasFollowed(isFollowedUser)
+                        .then(isFollowedResult => {
+                            res.status(200).json({
+                                isFollowed: isFollowedResult ? true : false
+                            });
+
+                        })
+                })
+        })
+        .catch(err => {
+            if (!err.statusCode) {
+                err.statusCode = 500;
+            }
+
+            next(err);
+        });
+}
+
+exports.userStats = (req, res, next) => {
+    const userId = +req.params.id;
+
+    const query = `SELECT
+	(SELECT COUNT(*) FROM followers
+		WHERE followerId = $userId) AS followingCount,
+	(SELECT COUNT(*) FROM followers
+		WHERE followedId = $userId) AS followersCount`
+
+    User.findByPk(userId)
+        .then(user => {
+            if (!user) {
+                throw new HttpError('Non-existent user!', 401);
+            }
+
+            sequelize.query(query, {
+                    nest: true,
+                    bind: {
+                        userId: userId
+                    },
+                    type: QueryTypes.SELECT
+                })
+                .then((stats) => {
+                    res.status(200).json({
+                        stats: stats
+                    });
                 })
         })
         .catch(err => {

@@ -9,10 +9,15 @@ router.get("/all", UserController.allUsers);
 
 router.get("/:id", UserController.userById);
 
+router.get('/follow/:id', isAuth, UserController.followUser);
+
+router.get("/is-followed/:id", isAuth, UserController.isUserFollowed);
+
+router.get("/stats/:id", UserController.userStats);
+
 router.post("/register", UserController.registerUser);
 
 router.post("/login", UserController.loginUser);
 
-router.put('/follow/:id', isAuth, UserController.followUser);
 
 module.exports = router;
