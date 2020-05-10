@@ -9,233 +9,215 @@ const User = require('../models/user')
 const Chirp = require('../models/chirp')
 const HttpError = require('../models/http-error');
 
-exports.allUsers = (req, res, next) => {
-    User.findAll()
-        .then(users => {
-            if (!users) {
-                throw new HttpError('No users in database!', 401);
-            }
+exports.allUsers = async (req, res, next) => {
+    try {
+        const users = await User.findAll();
 
-            res.status(200).json({
-                users: users
-            })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
+        if (!users) {
+            throw new HttpError('No users in database!', 401);
+        }
 
-            next(err);
+        res.status(200).json({
+            users: users
         });
-}
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
 
-exports.userById = (req, res, next) => {
-    const userId = +req.params.id;
+        next(err);
+    }
+};
 
-    User.findByPk(userId, {
+exports.userById = async (req, res, next) => {
+    const userId = req.params.id;
+
+    try {
+        const user = await User.findByPk(userId, {
             include: [{
                 model: Chirp
             }]
         })
-        .then(user => {
-            if (!user) {
-                throw new HttpError(`A user with id ${userId} could not be found!`, 404);
-            }
 
-            res.status(200).json({
-                user: user
-            })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
-            next(err);
+        if (!user) {
+            throw new HttpError(`A user with id ${userId} could not be found!`, 404);
+        }
+
+        res.status(200).json({
+            user: user
         });
-}
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
 
-exports.registerUser = (req, res, next) => {
+        next(err);
+    }
+};
+
+exports.registerUser = async (req, res, next) => {
     const name = req.body.username;
     const password = req.body.password;
 
-    bcrypt
-        .hash(password, 12)
-        .then(hashedPassword => {
-            const user = User.create({
-                name: name,
-                password: hashedPassword
-            })
+    try {
+        const hashedPassword = await bcrypt.hash(password, 12);
 
-            return user;
-        })
-        .then(result => {
-            const jsonWebToken = createJsonWebToken(result.id, result.name);
-
-            res.status(201).json({
-                message: 'User created!',
-                token: jsonWebToken,
-                userId: result.id,
-                username: result.name
-            });
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
-
-            next(err);
+        const user = await User.create({
+            name: name,
+            password: hashedPassword
         });
-}
 
-exports.loginUser = (req, res, next) => {
+        const jsonWebToken = createJsonWebToken(user.id, user.name);
+
+        res.status(201).json({
+            message: 'User created!',
+            token: jsonWebToken,
+            userId: user.id,
+            username: user.name
+        });
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+
+        next(err);
+    }
+};
+
+exports.loginUser = async (req, res, next) => {
     const name = req.body.username;
     const password = req.body.password;
-    let loadedUser;
 
-    User.findOne({
+    try {
+        const user = await User.findOne({
             where: {
                 name: name
             }
-        })
-        .then(user => {
-            if (!user) {
-                throw new HttpError('A user with this name could not be found!', 401);
-            }
-
-            loadedUser = user;
-            return bcrypt.compare(password, user.password);
-        })
-        .then(isEqual => {
-            if (!isEqual) {
-                throw new HttpError('Wrong password!', 401);
-            }
-
-            const jsonWebToken = createJsonWebToken(loadedUser.id, loadedUser.name)
-
-            res.status(200).json({
-                token: jsonWebToken,
-                userId: loadedUser.id,
-                username: loadedUser.name
-            })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
-
-            next(err);
         });
-}
 
-exports.followUser = (req, res, next) => {
+        if (!user) {
+            throw new HttpError(`A user with name ${name} could not be found!`, 404);
+        }
+
+        const isEqual = await bcrypt.compare(password, user.password);
+
+        if (!isEqual) {
+            throw new HttpError('Wrong password!', 401);
+        }
+
+        const jsonWebToken = createJsonWebToken(user.id, user.name);
+
+        res.status(200).json({
+            token: jsonWebToken,
+            userId: user.id,
+            username: user.name
+        });
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+
+        next(err);
+    }
+};
+
+exports.followUser = async (req, res, next) => {
     const currentUserID = req.userId;
     const toFollowUserID = req.params.id;
 
-    User.findByPk(currentUserID)
-        .then(currentUser => {
-            User.findByPk(toFollowUserID)
-                .then(toFollowUser => {
-                    if (!toFollowUser) {
-                        throw new HttpError('Can not follow or unfollow non-existent user!', 401);
-                    }
+    try {
+        const currentUser = await User.findByPk(currentUserID);
+        const toFollowUser = await User.findByPk(toFollowUserID);
 
-                    currentUser.hasFollowed(toFollowUser)
-                        .then(hasFollowedResult => {
-                            if (hasFollowedResult) {
-                                currentUser.removeFollowed(toFollowUser)
-                                    .then(result => {
-                                        res.status(200).json({
-                                            message: `You are unfollow ${toFollowUser.name}`
-                                        });
-                                    })
+        if (!toFollowUser) {
+            throw new HttpError('Can not follow or unfollow non-existent user!', 404);
+        }
 
-                            } else {
-                                currentUser.addFollowed(toFollowUser)
-                                    .then(result => {
-                                        res.status(200).json({
-                                            message: `You are following ${toFollowUser.name}`
-                                        });
-                                    })
+        const hasFollowedResult = await currentUser.hasFollowed(toFollowUser);
 
-                            }
-                        })
-                })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
+        if (hasFollowedResult) {
+            await currentUser.removeFollowed(toFollowUser);
 
-            next(err);
-        });
-}
+            res.status(200).json({
+                message: `You are unfollow ${toFollowUser.name}`
+            });
+        } else {
+            await currentUser.addFollowed(toFollowUser);
 
-exports.isUserFollowed = (req, res, next) => {
+            res.status(200).json({
+                message: `You are following ${toFollowUser.name}`
+            });
+        }
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+
+        next(err);
+    }
+};
+
+exports.isUserFollowed = async (req, res, next) => {
     const currentUserID = req.userId;
     const isFollowedUserID = req.params.id;
 
-    User.findByPk(currentUserID)
-        .then(currentUser => {
-            User.findByPk(isFollowedUserID)
-                .then(isFollowedUser => {
-                    if (!isFollowedUser) {
-                        throw new HttpError('Non-existent user!', 401);
-                    }
+    try {
+        const currentUser = await User.findByPk(currentUserID);
+        const isFollowedUser = await User.findByPk(isFollowedUserID);
 
-                    currentUser.hasFollowed(isFollowedUser)
-                        .then(isFollowedResult => {
-                            res.status(200).json({
-                                isFollowed: isFollowedResult ? true : false
-                            });
+        if (!isFollowedUser) {
+            throw new HttpError(`A user with id ${isFollowedUserID} could not be found!`, 404);
+        }
 
-                        })
-                })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
+        const isFollowedResult = await currentUser.hasFollowed(isFollowedUser);
 
-            next(err);
+        res.status(200).json({
+            isFollowed: isFollowedResult
         });
-}
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
 
-exports.userStats = (req, res, next) => {
-    const userId = +req.params.id;
+        next(err);
+    }
+};
 
-    const query = `SELECT
-	(SELECT COUNT(*) FROM followers
-		WHERE followerId = $userId) AS followingCount,
-	(SELECT COUNT(*) FROM followers
-		WHERE followedId = $userId) AS followersCount`
+exports.userStats = async (req, res, next) => {
+    const userId = req.params.id;
 
-    User.findByPk(userId)
-        .then(user => {
-            if (!user) {
-                throw new HttpError('Non-existent user!', 401);
-            }
+    try {
+        const query = `SELECT
+        (SELECT COUNT(*) FROM followers
+            WHERE followerId = $userId) AS followingCount,
+        (SELECT COUNT(*) FROM followers
+            WHERE followedId = $userId) AS followersCount`
 
-            sequelize.query(query, {
-                    nest: true,
-                    bind: {
-                        userId: userId
-                    },
-                    type: QueryTypes.SELECT
-                })
-                .then((stats) => {
-                    res.status(200).json({
-                        stats: stats
-                    });
-                })
-        })
-        .catch(err => {
-            if (!err.statusCode) {
-                err.statusCode = 500;
-            }
+        const user = await User.findByPk(userId);
 
-            next(err);
+        if (!user) {
+            throw new HttpError(`A user with id ${userId} could not be found!`, 404);
+        }
+
+        const stats = await sequelize.query(query, {
+            nest: true,
+            bind: {
+                userId: userId
+            },
+            type: QueryTypes.SELECT
         });
-}
+
+        res.status(200).json({
+            stats: stats
+        });
+    } catch (err) {
+        if (!err.statusCode) {
+            err.statusCode = 500;
+        }
+
+        next(err);
+    }
+};
 
 function createJsonWebToken(id, username) {
     return jwt.sign({
@@ -246,4 +228,4 @@ function createJsonWebToken(id, username) {
             expiresIn: '1h'
         }
     );
-}
+};
