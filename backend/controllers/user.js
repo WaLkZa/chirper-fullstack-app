@@ -60,6 +60,16 @@ exports.registerUser = async (req, res, next) => {
     const password = req.body.password;
 
     try {
+        const findUserName = await User.findOne({
+            where: {
+                name: name
+            }
+        });
+
+        if (findUserName) {
+            throw new HttpError(`Username ${name} is already taken!`, 409);
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12);
 
         const user = await User.create({
