@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
 const sequelize = require('./backend/util/database')
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const User = require('./backend/models/user')
 const Chirp = require('./backend/models/chirp')
