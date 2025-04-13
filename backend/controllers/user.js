@@ -11,7 +11,11 @@ const HttpError = require('../models/http-error');
 
 exports.allUsers = async (req, res, next) => {
     try {
-        const users = await User.findAll();
+        const users = await User.findAll({
+            include: [{
+                model: Chirp
+            }]
+        });
 
         if (!users) {
             throw new HttpError('No users in database!', 401);
