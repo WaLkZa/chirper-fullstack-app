@@ -131,12 +131,14 @@ exports.chirpById = async (req, res, next) => {
 
 exports.createChirp = async (req, res, next) => {
     const content = req.body.content;
+    const image = req.body.image
     const userId = req.userId
 
     try {
         const chirp = await Chirp.create({
             userId: userId,
             content: content,
+            image: image || null,
             dateCreated: Date.now()
         });
 
@@ -157,6 +159,7 @@ exports.createChirp = async (req, res, next) => {
 exports.editChirp = async (req, res, next) => {
     const chirpId = req.params.id;
     const content = req.body.content;
+    const image = req.body.image;
 
     try {
         const chirp = await Chirp.findByPk(chirpId);
@@ -172,7 +175,8 @@ exports.editChirp = async (req, res, next) => {
 
         await chirp.update({
             content: content,
-            dateCreated: Date.now()
+            dateCreated: Date.now(),
+            image: image || null
         });
 
         res.status(200).json({

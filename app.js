@@ -3,6 +3,7 @@ const path = require('path');
 const bodyParser = require('body-parser');
 const sequelize = require('./backend/util/database')
 const bcrypt = require('bcryptjs');
+const cors = require("cors");
 
 const User = require('./backend/models/user')
 const Chirp = require('./backend/models/chirp')
@@ -14,22 +15,17 @@ const chirpRoutes = require('./backend/routes/chirp');
 
 const app = express();
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(cors());
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: false
 }));
 
 app.use("/images", express.static(path.join("backend/images")));
-
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader(
-        'Access-Control-Allow-Methods',
-        'OPTIONS, GET, POST, PUT, PATCH, DELETE'
-    );
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    next();
-});
 
 app.use("/api/user", userRoutes);
 app.use("/api/chirp", chirpRoutes);

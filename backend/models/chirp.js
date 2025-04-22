@@ -14,6 +14,10 @@ const Chirp = sequelize.define('chirps', {
         required: true,
         allowNull: false
     },
+    image: {
+        type: DataTypes.TEXT('long'),
+        allowNull: true
+    },
     dateCreated: {
         type: DataTypes.DATE,
         required: true,
