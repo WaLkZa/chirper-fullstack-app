@@ -39,7 +39,9 @@ exports.userById = async (req, res, next) => {
     try {
         const user = await User.findByPk(userId, {
             include: [{
-                model: Chirp
+                model: Chirp,
+                separate: true,
+                order: [['dateCreated', 'DESC']]
             }]
         })
 
